@@ -16,7 +16,7 @@ router.get("/", async function (req, res, next) {
         `SELECT id, comp_code FROM invoices`
     );
 
-    return res.json({companies: result.rows});
+    return res.json({invoices: result.rows});
 });
 
 /** GET /invoices/:id get single invoice */
@@ -29,7 +29,7 @@ router.get("/:id", async function (req, res, next) {
         [id]
     );
     const invoice = iResult.rows[0];
-    // const company_code = invoice.comp_code;
+    const company_code = invoice.comp_code;
 
     const cResult = await db.query(
         `SELECT code, name, description
@@ -45,47 +45,44 @@ router.get("/:id", async function (req, res, next) {
 
 /** POST /invoices: add invoice to list */
 router.post("/", async function (req, res, next) {
-    const {comp_code, amount } = req.body;
-
+    const {comp_code, amt} = req.body;
     const result = await db.query(
-        `INSERT INTO companies (code, name, description)
-        VALUES ($1, $2, $3)
-        RETURNING code, name, description`, [code, name, description] // [...newCompany]
-    )
-    const company = result.rows[0];
-    return res.json({ company });
-});
-
-/** PUT /companies/:code update a single company , return {company: 
- * {code, name, description}} */
-router.put("/:code", async function (req, res, next) {
-    const reqCompany = req.body;
-    const code = reqCompany.code;
-    const name = reqCompany.name;
-    const description = reqCompany.description;
-
-    const result = await db.query(
-        `UPDATE companies (code, name, description)
-        VALUES ($1, $2, $3)
-        RETURNING code, name, description`, [code, name, description] 
-    )
-    const company = result.rows[0];
-
-    if (!company) throw new NotFoundError("Company code does not exist");
-    return res.json({ company });
-});
-
-/** DELETE /:code delete a company, return {status: "deleted"} */
-router.delete("/:code", async function (req, res, next) {
-    const code = req.params.code;
-
-    const result = await db.query(
-        `DELETE FROM companies WHERE code = $1
-        RETURNING code, name`, [code]
+        `INSERT INTO invoices (comp_code, amt)
+        VALUES ($1, $2)
+        RETURNING id, comp_code, amt, paid, add_date, paid_date`, [comp_code, amt]
     );
-    const company = result.rows[0];
+    const invoice = result.rows[0];
+    return res.json({ invoice });
+});
 
-    if (!company) throw new NotFoundError("Company code does not exist");
+/** PUT /invoice/:id update a single invoice , return {invoice: 
+ * {id, comp_code, amt, paid, add_date, paid_date}} */
+router.put("/:id", async function (req, res, next) {
+    const id = req.params.id;
+    const amt = req.body.amt;
+    const result = await db.query(
+        `UPDATE invoices 
+            SET amt = $1
+            WHERE id = $2
+        RETURNING id, comp_code, amt, paid, add_date, paid_date`, [amt, id] 
+    );
+    const invoice = result.rows[0];
+
+    if (!invoice) throw new NotFoundError("Invoice does not exist");
+    return res.json({ invoice });
+});
+
+/** DELETE /:id delete an invoice, return {status: "deleted"} */
+router.delete("/:id", async function (req, res, next) {
+    const id = req.params.id;
+
+    const result = await db.query(
+        `DELETE FROM invoices WHERE id = $1
+        RETURNING comp_code`, [id]
+    );
+    const invoice = result.rows[0];
+
+    if (!invoice) throw new NotFoundError("Invoice ID does not exist");
     return res.json({ status: "deleted" });
 });
 

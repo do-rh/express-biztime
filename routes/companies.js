@@ -30,6 +30,14 @@ router.get("/:code", async function (req, res, next) {
     );
     const company = result.rows[0];
 
+    const iResult = await db.query(
+        `SELECT id
+            FROM invoices
+            WHERE comp_code = $1`, [code]
+    );
+    
+    company.invoices = iResult.rows.map(invoice => invoice.id);
+    
     if (!company) throw new NotFoundError("Company code does not exist");
     return res.json({ company });
 });
@@ -79,5 +87,7 @@ router.delete("/:code", async function (req, res, next) {
     if (!company) throw new NotFoundError("Company code does not exist");
     return res.json({ status: "deleted" });
 });
+
+
 
 module.exports = router;
