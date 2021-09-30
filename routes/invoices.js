@@ -19,35 +19,33 @@ router.get("/", async function (req, res, next) {
     return res.json({companies: result.rows});
 });
 
-// /** GET /invoices/:id get single invoice */
-// router.get("/:id", async function (req, res, next) {
-//     const id = req.query.id;
-//     const iResult = await db.query(
-//         `SELECT id, amt, paid, add_date, paid_date 
-//             FROM invoices 
-//             WHERE id = $1`,
-//         [id]
-//     );
-//     const invoice = iResult.rows[0];
-//     const company_code = 
+/** GET /invoices/:id get single invoice */
+router.get("/:id", async function (req, res, next) {
+    const id = req.params.id;
+    const iResult = await db.query(
+        `SELECT id, amt, paid, add_date, paid_date 
+            FROM invoices 
+            WHERE id = $1`,
+        [id]
+    );
+    const invoice = iResult.rows[0];
+    // const company_code = invoice.comp_code;
 
-//     const cResult = await db.query(
-//         `SELECT code, name, description
-//             FROM companies
-//             WHERE `
-//     )
+    const cResult = await db.query(
+        `SELECT code, name, description
+            FROM companies c
+            JOIN invoices i ON c.code = i.comp_code
+            WHERE id = $1`, [id]
+    );
+    invoice.company = cResult.rows[0];
 
-//     if (!company) throw new NotFoundError("Company code does not exist");
-//     return res.json({ company });
-// });
+    if (!invoice) throw new NotFoundError("Invoice does not exist");
+    return res.json({ invoice });
+});
 
-
-/** POST /companies: add company to list */
+/** POST /invoices: add invoice to list */
 router.post("/", async function (req, res, next) {
-    const newCompany = req.body; //json of new item
-    const code = newCompany.code;
-    const name = newCompany.name;
-    const description = newCompany.description;
+    const {comp_code, amount } = req.body;
 
     const result = await db.query(
         `INSERT INTO companies (code, name, description)
